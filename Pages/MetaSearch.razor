@@ -1,0 +1,114 @@
+@page "/metasearch"
+
+<MudPaper Class="p-6">
+    <MudText Typo="Typo.h5" Class="mb-2">Metasearch</MudText>
+    <MudText Typo="Typo.caption" Class="mb-4">Note: Metasearch results are based on specified criteria; however, control remains with individual sites for the return of relevant information.</MudText>
+
+    <MudGrid Class="mb-2 filter-row" Gutter="Gutter.Small">
+        <MudItem xs="12" md="6">
+            <MudTextField @bind-Value="SearchTerm"
+                           Label="Keyword Search"
+                           Placeholder="Enter your search term"
+                           Adornment="Adornment.Start"
+                           AdornmentIcon="@Icons.Material.Filled.Search"
+                           Variant="Variant.Outlined"
+                           Margin="Margin.Dense"
+                           Density="Density.Standard"
+                           Immediate="true"
+                           Class="w-full" />
+        </MudItem>
+
+        <MudItem xs="12" md="3">
+            <MudSelect T="string" Label="Publication"
+                       @bind-Value="SelectedPublication"
+                       Variant="Variant.Outlined" 
+                       Margin="Margin.Dense" 
+                       Density="Density.Standard"
+                       Clearable="true" 
+                       Class="w-full">
+                @foreach (var pub in Publications)
+                {
+                    <MudSelectItem Value="@pub">@pub</MudSelectItem>
+                }
+            </MudSelect>
+        </MudItem>
+
+        <MudItem xs="12" md="3">
+            <MudSelect T="ViewedStatus" Label="Viewed Status"
+                       Variant="Variant.Outlined" 
+                       Margin="Margin.Dense" 
+                       Density="Density.Standard"
+                       @bind-Value="SelectedStatus" 
+                       Clearable="true" 
+                       Class="w-full">
+                <MudSelectItem Value="ViewedStatus.All">All</MudSelectItem>
+                <MudSelectItem Value="ViewedStatus.Viewed">Viewed</MudSelectItem>
+                <MudSelectItem Value="ViewedStatus.Unviewed">Unviewed</MudSelectItem>
+            </MudSelect>
+        </MudItem>
+    </MudGrid>
+
+    <MudTable Items="@FilteredItems" Hover="true" Density="Density.Standard" Bordered="true" Elevation="0"
+              @bind-SortBy="CurrentSortLabel" @bind-SortDirection="CurrentSortDirection">
+        <HeaderContent>
+            <MudTh>Publication</MudTh>
+            <MudTh>Name</MudTh>
+            <MudTh SortSelector="@((ResultItem r) => r.Date)" SortBy="date">Date</MudTh>
+        </HeaderContent>
+        <RowTemplate>
+            <MudTd DataLabel="Publication">@context.Publication</MudTd>
+            <MudTd DataLabel="Name">
+                <MudLink Href="@context.Url" Target="_blank">@context.Name</MudLink>
+            </MudTd>
+            <MudTd DataLabel="Date">@context.Date.ToString("MM/dd/yyyy")</MudTd>
+        </RowTemplate>
+        <NoRecordsContent>
+            <MudText Class="p-4">No results match your filters.</MudText>
+        </NoRecordsContent>
+    </MudTable>
+</MudPaper>
+
+@code {
+    // Filtering state
+    protected string SearchTerm { get; set; } = string.Empty;
+    protected string? SelectedPublication { get; set; } = null;
+    protected ViewedStatus SelectedStatus { get; set; } = ViewedStatus.All;
+
+    // Sorting state (optional: default to date desc)
+    protected string CurrentSortLabel { get; set; } = "date";
+    protected SortDirection CurrentSortDirection { get; set; } = SortDirection.Descending;
+
+    // Sample data
+    protected List<string> Publications { get; set; } = new() { "Site A", "Site B", "Site C" };
+    protected List<ResultItem> Items { get; set; } = new()
+    {
+        new ResultItem { Publication = "Site A", Name = "Result 1", Url = "https://example.com/1", Date = DateTime.Now.AddDays(-1), Status = ViewedStatus.Viewed },
+        new ResultItem { Publication = "Site B", Name = "Result 2", Url = "https://example.com/2", Date = DateTime.Now.AddDays(-2), Status = ViewedStatus.Unviewed },
+        new ResultItem { Publication = "Site C", Name = "Result 3", Url = "https://example.com/3", Date = DateTime.Now.AddDays(-3), Status = ViewedStatus.Viewed },
+        new ResultItem { Publication = "Site A", Name = "Result 4", Url = "https://example.com/4", Date = DateTime.Now.AddDays(-4), Status = ViewedStatus.Unviewed },
+    };
+
+    protected IEnumerable<ResultItem> FilteredItems =>
+        Items.Where(item =>
+            (string.IsNullOrWhiteSpace(SearchTerm) || item.Name.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase) || item.Publication.Contains(SearchTerm, StringComparison.OrdinalIgnoreCase)) &&
+            (string.IsNullOrEmpty(SelectedPublication) || item.Publication == SelectedPublication) &&
+            (SelectedStatus == ViewedStatus.All || item.Status == SelectedStatus)
+        ).OrderByDescending(i => i.Date);
+
+    protected enum ViewedStatus
+    {
+        All,
+        Viewed,
+        Unviewed
+    }
+
+    protected class ResultItem
+    {
+        public required string Publication { get; set; }
+        public required string Name { get; set; }
+        public required string Url { get; set; }
+        public DateTime Date { get; set; }
+        public ViewedStatus Status { get; set; }
+    }
+
+}
