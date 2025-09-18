@@ -2,42 +2,97 @@
 @using Microsoft.AspNetCore.Components.Forms
 @using MudBlazor
 @using MudBlazor.Services
+@using MetaSearchApp.Models
 
 @inject IProductInfoLinksService LinksService
 @inject ISnackbar Snackbar
 
 <MudDialog MaxWidth="MaxWidth.Medium">
+    <TitleContent>
+        <MudText Typo="Typo.h6">Product Information Links Management</MudText>
+        <MudText Typo="Typo.caption" Class="mud-text-secondary">Product ID: @ProductId</MudText>
+    </TitleContent>
+    
     <DialogContent>
-        <MudForm @ref="_form">
-            <Section Title="Prescribing Information"
-                     @bind-Enabled="Model.PrescribingEnabled"
-                     @bind-Url="Model.PrescribingUrl"
-                     Placeholder="https://…"
-                     Max="500" />
-
-            <Section Title="Patient Information"
-                     @bind-Enabled="Model.PatientInfoEnabled"
-                     @bind-Url="Model.PatientInfoUrl"
-                     Placeholder="https://…"
-                     Max="500" />
-
-            <Section Title="Medication Guide"
-                     @bind-Enabled="Model.MedicationGuideEnabled"
-                     @bind-Url="Model.MedicationGuideUrl"
-                     Placeholder="https://…"
-                     Max="500" />
-
-            <Section Title="Instructions for Use"
-                     @bind-Enabled="Model.InstructionsForUseEnabled"
-                     @bind-Url="Model.InstructionsForUseUrl"
-                     Placeholder="https://…"
-                     Max="500" />
-        </MudForm>
+        <MudContainer Class="pa-0">
+            @* Prescribing Information *@
+            <MudPaper Class="pa-3 mb-3" Elevation="1">
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Prescribing Information</MudText>
+                <MudTextField @bind-Value="PrescribingUrl" 
+                              Placeholder="Enter URL" 
+                              MaxLength="500" 
+                              Immediate="true"
+                              HelperText="@GetCharacterCount(PrescribingUrl)"
+                              Error="@GetValidationError(PrescribingUrl, PrescribingEnabled)"
+                              ErrorText="@GetErrorText(PrescribingUrl, PrescribingEnabled)" />
+                <MudCheckBox @bind-Value="PrescribingEnabled" 
+                             Label="Enable Prescribing Information" 
+                             Class="mt-2" />
+            </MudPaper>
+            
+            @* Patient Information *@
+            <MudPaper Class="pa-3 mb-3" Elevation="1">
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Patient Information</MudText>
+                <MudTextField @bind-Value="PatientInfoUrl" 
+                              Placeholder="Enter URL" 
+                              MaxLength="500" 
+                              Immediate="true"
+                              HelperText="@GetCharacterCount(PatientInfoUrl)"
+                              Error="@GetValidationError(PatientInfoUrl, PatientInfoEnabled)"
+                              ErrorText="@GetErrorText(PatientInfoUrl, PatientInfoEnabled)" />
+                <MudCheckBox @bind-Value="PatientInfoEnabled" 
+                             Label="Enable Patient Information" 
+                             Class="mt-2" />
+            </MudPaper>
+            
+            @* Medication Guide *@
+            <MudPaper Class="pa-3 mb-3" Elevation="1">
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Medication Guide</MudText>
+                <MudTextField @bind-Value="MedicationGuideUrl" 
+                              Placeholder="Enter URL" 
+                              MaxLength="500" 
+                              Immediate="true"
+                              HelperText="@GetCharacterCount(MedicationGuideUrl)"
+                              Error="@GetValidationError(MedicationGuideUrl, MedicationGuideEnabled)"
+                              ErrorText="@GetErrorText(MedicationGuideUrl, MedicationGuideEnabled)" />
+                <MudCheckBox @bind-Value="MedicationGuideEnabled" 
+                             Label="Enable Medication Guide" 
+                             Class="mt-2" />
+            </MudPaper>
+            
+            @* Instructions for Use *@
+            <MudPaper Class="pa-3 mb-3" Elevation="1">
+                <MudText Typo="Typo.subtitle2" Class="mb-2">Instructions for Use</MudText>
+                <MudTextField @bind-Value="InstructionsForUseUrl" 
+                              Placeholder="Enter URL" 
+                              MaxLength="500" 
+                              Immediate="true"
+                              HelperText="@GetCharacterCount(InstructionsForUseUrl)"
+                              Error="@GetValidationError(InstructionsForUseUrl, InstructionsForUseEnabled)"
+                              ErrorText="@GetErrorText(InstructionsForUseUrl, InstructionsForUseEnabled)" />
+                <MudCheckBox @bind-Value="InstructionsForUseEnabled" 
+                             Label="Enable Instructions for Use" 
+                             Class="mt-2" />
+            </MudPaper>
+        </MudContainer>
     </DialogContent>
 
     <DialogActions>
-        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync" Disabled="@_busy">Save</MudButton>
-        <MudButton Variant="Variant.Outlined" OnClick="Cancel">Cancel</MudButton>
+        <MudButton Variant="Variant.Text" OnClick="Cancel">Cancel</MudButton>
+        <MudButton Color="Color.Primary"
+                   Disabled="@(!IsFormValid || _busy)"
+                   OnClick="SaveAsync"
+                   Variant="Variant.Filled">
+            @if (_busy)
+            {
+                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
+                <MudText Class="ms-2">Saving...</MudText>
+            }
+            else
+            {
+                <MudText>Save</MudText>
+            }
+        </MudButton>
     </DialogActions>
 </MudDialog>
 
@@ -45,54 +100,120 @@
     [CascadingParameter] IDialogReference MudDialog { get; set; } = default!;
     [Parameter] public int ProductId { get; set; }
 
-    private MudForm? _form;
     private bool _busy;
-    private ProductInfoLinksDto Model = new();
+    
+    // Simple properties for binding
+    private string? PrescribingUrl { get; set; }
+    private bool PrescribingEnabled { get; set; }
+    
+    private string? PatientInfoUrl { get; set; }
+    private bool PatientInfoEnabled { get; set; }
+    
+    private string? MedicationGuideUrl { get; set; }
+    private bool MedicationGuideEnabled { get; set; }
+    
+    private string? InstructionsForUseUrl { get; set; }
+    private bool InstructionsForUseEnabled { get; set; }
 
-    protected override async Task OnParametersSetAsync()
+    protected override async Task OnInitializedAsync()
     {
         _busy = true;
-        Model = await LinksService.GetAsync(ProductId) ?? new ProductInfoLinksDto { ProductId = ProductId };
-        _busy = false;
+        try
+        {
+            var existing = await LinksService.GetAsync(ProductId);
+            if (existing != null)
+            {
+                PrescribingUrl = existing.PrescribingInformation.Url;
+                PrescribingEnabled = existing.PrescribingInformation.Enabled;
+                
+                PatientInfoUrl = existing.PatientInformation.Url;
+                PatientInfoEnabled = existing.PatientInformation.Enabled;
+                
+                MedicationGuideUrl = existing.MedicationGuide.Url;
+                MedicationGuideEnabled = existing.MedicationGuide.Enabled;
+                
+                InstructionsForUseUrl = existing.InstructionsForUse.Url;
+                InstructionsForUseEnabled = existing.InstructionsForUse.Enabled;
+            }
+        }
+        catch (Exception ex)
+        {
+            // Fallback to default values if service fails
+            Snackbar.Add($"Could not load existing data: {ex.Message}", Severity.Warning);
+        }
+        finally
+        {
+            _busy = false;
+        }
     }
 
+    private string GetCharacterCount(string? url)
+    {
+        return $"Characters used: {(url?.Length ?? 0)}/500";
+    }
+
+    private bool GetValidationError(string? url, bool enabled)
+    {
+        if (!enabled) return false;
+        return string.IsNullOrWhiteSpace(url) || !UrlRules.IsHttpOrHttps(url);
+    }
+
+    private string GetErrorText(string? url, bool enabled)
+    {
+        if (!enabled) return "";
+        if (string.IsNullOrWhiteSpace(url)) return "URL required.";
+        if (!UrlRules.IsHttpOrHttps(url)) return "Enter a valid http(s) URL.";
+        return "";
+    }
+
+    private bool IsFormValid
+    {
+        get
+        {
+            return ValidateUrl(PrescribingUrl, PrescribingEnabled) &&
+                   ValidateUrl(PatientInfoUrl, PatientInfoEnabled) &&
+                   ValidateUrl(MedicationGuideUrl, MedicationGuideEnabled) &&
+                   ValidateUrl(InstructionsForUseUrl, InstructionsForUseEnabled);
+        }
+    }
+
+    private bool ValidateUrl(string? url, bool enabled)
+    {
+        if (!enabled) return true;
+        
+        return !string.IsNullOrWhiteSpace(url) && 
+               UrlRules.IsHttpOrHttps(url) && 
+               url.Trim().Length <= 500;
+    }
 
     private async Task SaveAsync()
     {
-        if (_form is null) return;
-        await _form.Validate();
-        if (!_form.IsValid) return;
-
-        // extra guard: if enabled, URL must be https and ≤500
-        string? bad = GetFirstInvalid();
-        if (bad is not null) { Snackbar.Add(bad, Severity.Error); return; }
+        if (!IsFormValid) return;
 
         _busy = true;
         try
         {
-            await LinksService.SaveAsync(Model);
-            Snackbar.Add("Links updated", Severity.Success);
+            var model = new ProductInfoLinksDto
+            {
+                ProductId = ProductId.ToString(),
+                PrescribingInformation = new(PrescribingEnabled, PrescribingUrl?.Trim()),
+                PatientInformation = new(PatientInfoEnabled, PatientInfoUrl?.Trim()),
+                MedicationGuide = new(MedicationGuideEnabled, MedicationGuideUrl?.Trim()),
+                InstructionsForUse = new(InstructionsForUseEnabled, InstructionsForUseUrl?.Trim())
+            };
+
+            await LinksService.SaveAsync(model);
+            Snackbar.Add("Product information links updated.", Severity.Success);
             MudDialog?.Close(DialogResult.Ok(true));
         }
         catch (Exception ex)
         {
-            Snackbar.Add(ex.Message, Severity.Error);
+            Snackbar.Add($"Error saving: {ex.Message}", Severity.Error);
         }
-        finally { _busy = false; }
-    }
-
-    private string? GetFirstInvalid()
-    {
-        bool UrlOk(string? u) =>
-            !string.IsNullOrWhiteSpace(u) &&
-            u.StartsWith("https://", StringComparison.OrdinalIgnoreCase) &&
-            u.Length <= 500;
-
-        if (Model.PrescribingEnabled && !UrlOk(Model.PrescribingUrl)) return "Prescribing URL must be https and ≤ 500 chars.";
-        if (Model.PatientInfoEnabled && !UrlOk(Model.PatientInfoUrl)) return "Patient Information URL must be https and ≤ 500 chars.";
-        if (Model.MedicationGuideEnabled && !UrlOk(Model.MedicationGuideUrl)) return "Medication Guide URL must be https and ≤ 500 chars.";
-        if (Model.InstructionsForUseEnabled && !UrlOk(Model.InstructionsForUseUrl)) return "Instructions for Use URL must be https and ≤ 500 chars.";
-        return null;
+        finally 
+        { 
+            _busy = false; 
+        }
     }
 
     private void Cancel() => MudDialog?.Close(DialogResult.Cancel());

@@ -26,15 +26,11 @@ public sealed class ProductInfoLinksService(HttpClient http) : IProductInfoLinks
             // Create sample data for demo
             var sampleData = new ProductInfoLinksDto
             {
-                ProductId = id,
-                PrescribingEnabled = true,
-                PrescribingUrl = "https://example.com/prescribing-info",
-                PatientInfoEnabled = false,
-                PatientInfoUrl = "",
-                MedicationGuideEnabled = true,
-                MedicationGuideUrl = "https://example.com/medication-guide",
-                InstructionsForUseEnabled = false,
-                InstructionsForUseUrl = ""
+                ProductId = id.ToString(),
+                PrescribingInformation = new(true, "https://example.com/prescribing-info"),
+                PatientInformation = new(false, ""),
+                MedicationGuide = new(true, "https://example.com/medication-guide"),
+                InstructionsForUse = new(false, "")
             };
 
             _storage[id] = sampleData;
@@ -53,7 +49,10 @@ public sealed class ProductInfoLinksService(HttpClient http) : IProductInfoLinks
         catch
         {
             // Fallback to in-memory storage for demo
-            _storage[dto.ProductId] = dto;
+            if (int.TryParse(dto.ProductId, out var productId))
+            {
+                _storage[productId] = dto;
+            }
             await Task.Delay(500); // Simulate API delay
         }
     }

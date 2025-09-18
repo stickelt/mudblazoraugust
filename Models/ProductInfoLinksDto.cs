@@ -2,19 +2,21 @@ using System.ComponentModel.DataAnnotations;
 
 namespace MetaSearchApp.Models;
 
-public sealed class ProductInfoLinksDto
+public record LinkItem(bool Enabled, string? Url);
+
+public record ProductInfoLinksDto
 {
-    public int ProductId { get; set; }
+    public string ProductId { get; set; } = default!;
+    public LinkItem PrescribingInformation { get; set; } = new(false, null);
+    public LinkItem PatientInformation { get; set; } = new(false, null);
+    public LinkItem MedicationGuide { get; set; } = new(false, null);
+    public LinkItem InstructionsForUse { get; set; } = new(false, null);
+}
 
-    [MaxLength(500)] public string? PrescribingUrl { get; set; }
-    public bool PrescribingEnabled { get; set; }
-
-    [MaxLength(500)] public string? PatientInfoUrl { get; set; }
-    public bool PatientInfoEnabled { get; set; }
-
-    [MaxLength(500)] public string? MedicationGuideUrl { get; set; }
-    public bool MedicationGuideEnabled { get; set; }
-
-    [MaxLength(500)] public string? InstructionsForUseUrl { get; set; }
-    public bool InstructionsForUseEnabled { get; set; }
+public static class UrlRules
+{
+    public static bool IsHttpOrHttps(string? url)
+        => !string.IsNullOrWhiteSpace(url) &&
+           Uri.TryCreate(url.Trim(), UriKind.Absolute, out var u) &&
+           (u.Scheme == Uri.UriSchemeHttp || u.Scheme == Uri.UriSchemeHttps);
 }
