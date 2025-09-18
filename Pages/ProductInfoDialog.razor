@@ -1,0 +1,65 @@
+@page "/product-info-dialog"
+@using System.ComponentModel.DataAnnotations
+
+<PageTitle>Product Info Dialog</PageTitle>
+
+<MudContainer MaxWidth="MaxWidth.Large" Class="mt-4">
+    <MudText Typo="Typo.h3" GutterBottom="true">Product Information Links</MudText>
+    <MudText Typo="Typo.body1" Class="mb-4">
+        This page demonstrates a MudDialog for managing product information links.
+    </MudText>
+
+    <MudCard Class="pa-4">
+        <MudCardContent>
+            <MudText Typo="Typo.h5" Class="mb-3">Product Management</MudText>
+            
+            <MudGrid>
+                <MudItem xs="12" sm="6" md="4">
+                    <MudTextField @bind-Value="SelectedProductId" 
+                                  Label="Product ID" 
+                                  Variant="Variant.Outlined"
+                                  Placeholder="Enter product ID (e.g., 123)" />
+                </MudItem>
+                <MudItem xs="12" sm="6" md="4">
+                    <MudButton Variant="Variant.Filled" 
+                               Color="Color.Primary" 
+                               StartIcon="@Icons.Material.Filled.Edit"
+                               OnClick="OpenDialog"
+                               Class="mt-2">
+                        Edit Product Links
+                    </MudButton>
+                </MudItem>
+            </MudGrid>
+
+            <MudDivider Class="my-4" />
+
+            <MudText Typo="Typo.h6" Class="mb-2">Instructions:</MudText>
+            <div class="instruction-list">
+                <MudPaper Class="pa-3 mb-2" Elevation="1">
+                    <div class="d-flex align-center">
+                        <MudIcon Icon="@Icons.Material.Filled.Info" Class="mr-3" Color="Color.Primary" />
+                        <MudText>Enter a Product ID in the field above</MudText>
+                    </div>
+                </MudPaper>
+                <MudPaper Class="pa-3 mb-2" Elevation="1">
+                    <div class="d-flex align-center">
+                        <MudIcon Icon="@Icons.Material.Filled.Launch" Class="mr-3" Color="Color.Primary" />
+                        <MudText>Click 'Edit Product Links' to open the dialog</MudText>
+                    </div>
+                </MudPaper>
+                <MudPaper Class="pa-3 mb-2" Elevation="1">
+                    <div class="d-flex align-center">
+                        <MudIcon Icon="@Icons.Material.Filled.Link" Class="mr-3" Color="Color.Primary" />
+                        <MudText>Configure various product information URLs in the dialog</MudText>
+                    </div>
+                </MudPaper>
+                <MudPaper Class="pa-3 mb-2" Elevation="1">
+                    <div class="d-flex align-center">
+                        <MudIcon Icon="@Icons.Material.Filled.Save" Class="mr-3" Color="Color.Primary" />
+                        <MudText>Save your changes or cancel to close the dialog</MudText>
+                    </div>
+                </MudPaper>
+            </div>
+        </MudCardContent>
+    </MudCard>
+</MudContainer>

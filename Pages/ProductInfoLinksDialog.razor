@@ -1,0 +1,99 @@
+@using System.ComponentModel.DataAnnotations
+@using Microsoft.AspNetCore.Components.Forms
+@using MudBlazor
+@using MudBlazor.Services
+
+@inject IProductInfoLinksService LinksService
+@inject ISnackbar Snackbar
+
+<MudDialog MaxWidth="MaxWidth.Medium">
+    <DialogContent>
+        <MudForm @ref="_form">
+            <Section Title="Prescribing Information"
+                     @bind-Enabled="Model.PrescribingEnabled"
+                     @bind-Url="Model.PrescribingUrl"
+                     Placeholder="https://…"
+                     Max="500" />
+
+            <Section Title="Patient Information"
+                     @bind-Enabled="Model.PatientInfoEnabled"
+                     @bind-Url="Model.PatientInfoUrl"
+                     Placeholder="https://…"
+                     Max="500" />
+
+            <Section Title="Medication Guide"
+                     @bind-Enabled="Model.MedicationGuideEnabled"
+                     @bind-Url="Model.MedicationGuideUrl"
+                     Placeholder="https://…"
+                     Max="500" />
+
+            <Section Title="Instructions for Use"
+                     @bind-Enabled="Model.InstructionsForUseEnabled"
+                     @bind-Url="Model.InstructionsForUseUrl"
+                     Placeholder="https://…"
+                     Max="500" />
+        </MudForm>
+    </DialogContent>
+
+    <DialogActions>
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="SaveAsync" Disabled="@_busy">Save</MudButton>
+        <MudButton Variant="Variant.Outlined" OnClick="Cancel">Cancel</MudButton>
+    </DialogActions>
+</MudDialog>
+
+@code {
+    [CascadingParameter] IDialogReference MudDialog { get; set; } = default!;
+    [Parameter] public int ProductId { get; set; }
+
+    private MudForm? _form;
+    private bool _busy;
+    private ProductInfoLinksDto Model = new();
+
+    protected override async Task OnParametersSetAsync()
+    {
+        _busy = true;
+        Model = await LinksService.GetAsync(ProductId) ?? new ProductInfoLinksDto { ProductId = ProductId };
+        _busy = false;
+    }
+
+
+    private async Task SaveAsync()
+    {
+        if (_form is null) return;
+        await _form.Validate();
+        if (!_form.IsValid) return;
+
+        // extra guard: if enabled, URL must be https and ≤500
+        string? bad = GetFirstInvalid();
+        if (bad is not null) { Snackbar.Add(bad, Severity.Error); return; }
+
+        _busy = true;
+        try
+        {
+            await LinksService.SaveAsync(Model);
+            Snackbar.Add("Links updated", Severity.Success);
+            MudDialog?.Close(DialogResult.Ok(true));
+        }
+        catch (Exception ex)
+        {
+            Snackbar.Add(ex.Message, Severity.Error);
+        }
+        finally { _busy = false; }
+    }
+
+    private string? GetFirstInvalid()
+    {
+        bool UrlOk(string? u) =>
+            !string.IsNullOrWhiteSpace(u) &&
+            u.StartsWith("https://", StringComparison.OrdinalIgnoreCase) &&
+            u.Length <= 500;
+
+        if (Model.PrescribingEnabled && !UrlOk(Model.PrescribingUrl)) return "Prescribing URL must be https and ≤ 500 chars.";
+        if (Model.PatientInfoEnabled && !UrlOk(Model.PatientInfoUrl)) return "Patient Information URL must be https and ≤ 500 chars.";
+        if (Model.MedicationGuideEnabled && !UrlOk(Model.MedicationGuideUrl)) return "Medication Guide URL must be https and ≤ 500 chars.";
+        if (Model.InstructionsForUseEnabled && !UrlOk(Model.InstructionsForUseUrl)) return "Instructions for Use URL must be https and ≤ 500 chars.";
+        return null;
+    }
+
+    private void Cancel() => MudDialog?.Close(DialogResult.Cancel());
+}
